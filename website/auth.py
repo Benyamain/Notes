@@ -1,4 +1,16 @@
-from flask import Blueprint, render_template, request, flash
+from flask import Blueprint, render_template, request, flash, redirect, url_for
+from .models import User
+from . import database
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# Hashing function has no inverse
+# Given some x, you can find the y, but not the other way around
+# Given the hash output, you can never return to the stored password
+# x -> y
+# f(x) = x + 1
+# f'(x) = y - 1
+# y -> x
+
 
 # Backend
 auth = Blueprint('auth', __name__)
@@ -32,6 +44,11 @@ def signup():
             flash('Password must be at least 6 characters.', category='error')
         else:
             # Add user to database
-            flash('Account was created!', category='success')
+            new_user = User(email=email, first_name=first_name, last_name=last_name, password=generate_password_hash(password_one, method='sha256'))
+            database.session.add(new_user)
+            # Update the database with new user
+            database.session.commit()
+            flash('Account created!', category='success')
+            return redirect(url_for('views.home'))
     
     return render_template("signup.html")
