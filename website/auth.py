@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from .models import User
-from . import database
 from werkzeug.security import generate_password_hash, check_password_hash
+from . import database
+from flask_login import login_user, login_required, logout_user, current_user
 
 # Hashing function has no inverse
 # Given some x, you can find the y, but not the other way around
@@ -28,6 +29,7 @@ def login():
             # when user signed up
             if check_password_hash(user.password, password):
                 flash('Login success!', category='success')
+                login_user(user, remember=True)
                 return redirect(url_for('views.home'))
             else:
                 flash('Incorrect passsword! Please try again.', category='error')
@@ -37,8 +39,11 @@ def login():
     return render_template("login.html")
 
 @auth.route('/logout')
+# Makes sure that we cannot access logout if user is not logged in
+@login_required
 def logout():
-    return "<p>Logout</p>"
+    logout_user()
+    return redirect(url_for('auth.login'))
 
 @auth.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -69,6 +74,7 @@ def signup():
             database.session.add(new_user)
             # Update the database with new user
             database.session.commit()
+            login_user(user, remember=True)
             flash('Account created!', category='success')
             return redirect(url_for('views.home'))
     
